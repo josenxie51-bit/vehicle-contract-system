@@ -267,6 +267,16 @@
             color: #ccc;
         }
         
+        .security-badge {
+            background: #e8f5e8;
+            border: 1px solid #2e7d32;
+            color: #2e7d32;
+            padding: 10px 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-size: 0.9rem;
+        }
+        
         footer {
             text-align: center;
             color: white;
@@ -305,6 +315,10 @@
         <div class="card">
             <h2 class="card-title">查询条件</h2>
             
+            <div class="security-badge">
+                <i class="fas fa-shield-alt"></i> 安全模式：使用自建代理服务，数据不经过第三方
+            </div>
+            
             <form id="queryForm">
                 <div class="form-group">
                     <label for="plateNumber"><i class="fas fa-tag"></i> 号牌号码</label>
@@ -316,7 +330,7 @@
             
             <div class="loading" id="loading">
                 <div class="spinner"></div>
-                <p>正在查询数据，请稍候...</p>
+                <p>正在通过安全代理查询数据...</p>
             </div>
             
             <div class="error-message" id="errorMessage"></div>
@@ -334,11 +348,14 @@
         </div>
         
         <footer>
-            <p>© 2025 车辆合同备案查询系统 | 数据来源：重庆122.gov.cn</p>
+            <p>© 2025 车辆合同备案查询系统 | 数据来源：重庆122.gov.cn | 安全代理模式</p>
         </footer>
     </div>
 
     <script>
+        // 配置 - 你的代理服务器地址
+        const PROXY_SERVER = 'https://vehicle-contract-proxy-1jyz1a548-josenxie51-bits-projects.vercel.app';
+        
         // 表单提交处理
         document.getElementById('queryForm').addEventListener('submit', async function(e) {
             e.preventDefault();
@@ -351,13 +368,13 @@
             }
             
             // 显示加载动画
-            showLoading('正在查询备案合同信息...');
+            showLoading('正在通过安全代理查询数据...');
             document.getElementById('errorMessage').style.display = 'none';
             document.getElementById('successMessage').style.display = 'none';
             document.getElementById('resultContainer').style.display = 'none';
             
             try {
-                // 调用真实API查询
+                // 调用安全代理查询
                 const contracts = await queryRealApi(plateNumber);
                 displayContracts(contracts, plateNumber);
             } catch (error) {
@@ -365,47 +382,35 @@
             }
         });
 
-        // 调用真实API查询
+        // 使用安全代理调用真实API
         async function queryRealApi(plateNumber) {
             try {
-                const url = 'https://cq.122.gov.cn/vio/rent/contract/list';
-                
-                const formData = new URLSearchParams();
-                formData.append('hphm', plateNumber);
-                formData.append('page', '1');
-                formData.append('size', '100');
-                
-                const response = await fetch(url, {
+                const response = await fetch(`${PROXY_SERVER}/api/vehicle-contracts`, {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-                        'Referer': 'https://cq.122.gov.cn/',
-                        'Origin': 'https://cq.122.gov.cn'
+                        'Content-Type': 'application/json',
                     },
-                    body: formData,
-                    mode: 'cors',
-                    credentials: 'include'
+                    body: JSON.stringify({
+                        plateNumber: plateNumber
+                    })
                 });
                 
                 if (!response.ok) {
-                    throw new Error(`HTTP错误: ${response.status}`);
+                    throw new Error(`代理服务错误: ${response.status}`);
                 }
                 
                 const result = await response.json();
-                console.log('API响应:', result);
+                console.log('代理响应:', result);
                 
-                if (result.code === 200 && result.data && result.data.content) {
-                    return result.data.content;
-                } else if (result.code !== 200) {
-                    throw new Error(result.message || 'API返回错误');
+                if (result.success && result.data && result.data.code === 200) {
+                    return result.data.data.content || [];
                 } else {
-                    return [];
+                    throw new Error(result.message || '代理服务返回错误');
                 }
                 
             } catch (error) {
-                console.error('API调用失败:', error);
-                throw new Error('网络请求失败: ' + error.message);
+                console.error('代理请求失败:', error);
+                throw new Error('安全代理请求失败: ' + error.message);
             }
         }
 

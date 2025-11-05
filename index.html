@@ -367,65 +367,45 @@
 
         // 调用真实API查询
         async function queryRealApi(plateNumber) {
-            // 这里应该调用真实的API
-            // 暂时用模拟数据代替真实API响应
-            
-            // 模拟网络请求延迟
-            await new Promise(resolve => setTimeout(resolve, 1500));
-            
-            // 根据你提供的真实字段结构模拟数据
-            const mockResponse = {
-                code: 200,
-                data: {
-                    content: [
-                        {
-                            htbh: "CQBR2.202511051137",
-                            htdgdg: "2025-11-05 11:45",
-                            sfzhrhm: "5001********6513",
-                            tqzzsj: "2025-12-04 11:00",
-                            wcivfl: 0,
-                            zkssj: "2025-11-05 11:45",
-                            zt: 1,
-                            xm: "张三"
-                        },
-                        {
-                            htbh: "CQBR2.202410201122",
-                            htdgdg: "2024-10-20 09:30",
-                            sfzhrhm: "5102********1234",
-                            tqzzsj: "2025-05-15",
-                            wcivfl: 2,
-                            zkssj: "2024-10-20 09:30",
-                            zt: 0,
-                            xm: "李四"
-                        },
-                        {
-                            htbh: "CQBR2.202309150845",
-                            htdgdg: "2023-09-15 08:45",
-                            sfzhrhm: "5003********5678",
-                            tqzzsj: null,
-                            wcivfl: 1,
-                            zkssj: "2023-09-15 08:45",
-                            zt: 1,
-                            xm: "王五"
-                        },
-                        {
-                            htbh: "CQBR2.202208100930",
-                            htdgdg: "2022-08-10 09:30",
-                            sfzhrhm: "5104********9012",
-                            tqzzsj: "2023-02-28",
-                            wcivfl: 0,
-                            zkssj: "2022-08-10 09:30",
-                            zt: 0,
-                            xm: "赵六"
-                        }
-                    ]
+            try {
+                const url = 'https://cq.122.gov.cn/vio/rent/contract/list';
+                
+                const formData = new URLSearchParams();
+                formData.append('hphm', plateNumber);
+                formData.append('page', '1');
+                formData.append('size', '100');
+                
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+                        'Referer': 'https://cq.122.gov.cn/',
+                        'Origin': 'https://cq.122.gov.cn'
+                    },
+                    body: formData,
+                    mode: 'cors',
+                    credentials: 'include'
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP错误: ${response.status}`);
                 }
-            };
-            
-            if (mockResponse.code === 200) {
-                return mockResponse.data.content;
-            } else {
-                throw new Error('API查询失败');
+                
+                const result = await response.json();
+                console.log('API响应:', result);
+                
+                if (result.code === 200 && result.data && result.data.content) {
+                    return result.data.content;
+                } else if (result.code !== 200) {
+                    throw new Error(result.message || 'API返回错误');
+                } else {
+                    return [];
+                }
+                
+            } catch (error) {
+                console.error('API调用失败:', error);
+                throw new Error('网络请求失败: ' + error.message);
             }
         }
 
@@ -469,19 +449,24 @@
             
             contracts.forEach(contract => {
                 const statusInfo = getStatusInfo(contract.zt);
-                const violationClass = getViolationClass(contract.wcivfl);
+                const violationCount = contract.wcivfl || contract.wclwfsl || 0;
+                const violationClass = getViolationClass(violationCount);
                 const terminateTime = contract.tqzzsj || '-';
+                const startTime = contract.zkssj || '-';
+                const signTime = contract.htdgdg || contract.htqdsj || '-';
+                const userName = contract.xm || '-';
+                const idCard = contract.sfzhrhm || contract.sfzhm || '-';
                 
                 tableHTML += `
                     <tr>
                         <td><strong>${contract.htbh}</strong></td>
-                        <td>${contract.xm || '-'}</td>
-                        <td>${contract.sfzhrhm}</td>
-                        <td>${contract.htdgdg}</td>
-                        <td>${contract.zkssj}</td>
+                        <td>${userName}</td>
+                        <td>${idCard}</td>
+                        <td>${signTime}</td>
+                        <td>${startTime}</td>
                         <td>${terminateTime}</td>
                         <td><span class="${statusInfo.class}">${statusInfo.text}</span></td>
-                        <td class="violation-count ${violationClass}">${contract.wcivfl} 次</td>
+                        <td class="violation-count ${violationClass}">${violationCount} 次</td>
                     </tr>
                 `;
             });

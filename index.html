@@ -76,7 +76,7 @@
             color: #444;
         }
         
-        input, select {
+        input {
             width: 100%;
             padding: 12px 15px;
             border: 2px solid #ddd;
@@ -85,7 +85,7 @@
             transition: border-color 0.3s;
         }
         
-        input:focus, select:focus {
+        input:focus {
             border-color: #1a2a6c;
             outline: none;
         }
@@ -103,6 +103,8 @@
             display: inline-flex;
             align-items: center;
             justify-content: center;
+            margin-right: 10px;
+            margin-bottom: 10px;
         }
         
         .btn:hover {
@@ -112,6 +114,10 @@
         
         .btn i {
             margin-right: 8px;
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(to right, #666, #999);
         }
         
         .result-container {
@@ -155,6 +161,7 @@
         
         .result-value {
             color: #333;
+            word-break: break-all;
         }
         
         .loading {
@@ -187,19 +194,40 @@
             display: none;
         }
         
-        .code-section {
-            background: #2d3748;
-            color: #e2e8f0;
-            border-radius: 10px;
-            padding: 20px;
-            margin-top: 30px;
-            overflow-x: auto;
+        .success-message {
+            background: #e8f5e8;
+            color: #2e7d32;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            display: none;
         }
         
-        .code-title {
-            color: #fdbb2d;
+        .config-section {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        
+        .config-title {
+            color: #1a2a6c;
             margin-bottom: 15px;
             font-size: 1.2rem;
+        }
+        
+        .ck-preview {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 10px;
+            font-family: monospace;
+            font-size: 0.9rem;
+            max-height: 150px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
         }
         
         footer {
@@ -216,7 +244,7 @@
             }
             
             header h1 {
-                fontSize: 2rem;
+                font-size: 2rem;
             }
             
             .result-grid {
@@ -240,23 +268,6 @@
                     <input type="text" id="plateNumber" placeholder="请输入车辆号牌号码" required>
                 </div>
                 
-                <div class="form-group">
-                    <label for="plateType"><i class="fas fa-list"></i> 号牌种类</label>
-                    <select id="plateType">
-                        <option value="">请选择号牌种类</option>
-                        <option value="01">小型汽车</option>
-                        <option value="02">大型汽车</option>
-                        <option value="07">摩托车</option>
-                        <option value="15">挂车</option>
-                        <option value="52">新能源小型汽车</option>
-                    </select>
-                </div>
-                
-                <div class="form-group">
-                    <label for="contractNumber"><i class="fas fa-file-contract"></i> 合同编号 (可选)</label>
-                    <input type="text" id="contractNumber" placeholder="请输入合同编号">
-                </div>
-                
                 <button type="submit" class="btn"><i class="fas fa-search"></i> 查询合同备案</button>
             </form>
             
@@ -266,6 +277,7 @@
             </div>
             
             <div class="error-message" id="errorMessage"></div>
+            <div class="success-message" id="successMessage"></div>
             
             <div class="result-container" id="resultContainer">
                 <h2 class="card-title">查询结果</h2>
@@ -278,43 +290,23 @@
             </div>
         </div>
         
-        <div class="code-section">
-            <h3 class="code-title">Python 后端代码示例</h3>
-            <pre><code>
-# 单辆车查询函数示例
-def fetch_single_vehicle_data(plate_number, plate_type="", contract_number=""):
-    """
-    查询单辆车的合同备案数据
-    """
-    url = "https://cq.122.gov.cn/vio/rent/contract/list"
-    
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-        'Referer': 'https://cq.122.gov.cn/views/memzl/index2.html'
-    }
-    
-    data = {
-        'hpzl': plate_type,
-        'hphm': plate_number,
-        'htbh': contract_number,
-        'page': '1',
-        'size': '10'
-    }
-    
-    try:
-        response = requests.post(url, headers=headers, data=data, timeout=30, verify=False)
-        result = response.json()
-        
-        if 'data' in result and 'content' in result['data']:
-            return result['data']['content']
-        else:
-            return []
+        <div class="card config-section">
+            <h3 class="config-title">CK 配置管理</h3>
+            <div class="form-group">
+                <label for="ckFileUrl"><i class="fas fa-file-alt"></i> CK 文件路径</label>
+                <input type="text" id="ckFileUrl" placeholder="请输入CK文件路径（如：ck.txt）" value="ck.txt">
+                <small>支持本地文件或远程URL，文件内容为Cookie字符串</small>
+            </div>
             
-    except Exception as e:
-        print(f"查询失败: {e}")
-        return []
-            </code></pre>
+            <div class="form-group">
+                <label>当前 CK 内容预览：</label>
+                <div class="ck-preview" id="ckPreview">
+                    未加载CK内容
+                </div>
+            </div>
+            
+            <button type="button" class="btn" id="loadCkBtn"><i class="fas fa-sync"></i> 加载CK</button>
+            <button type="button" class="btn btn-secondary" id="testCkBtn"><i class="fas fa-vial"></i> 测试CK有效性</button>
         </div>
         
         <footer>
@@ -323,39 +315,123 @@ def fetch_single_vehicle_data(plate_number, plate_type="", contract_number=""):
     </div>
 
     <script>
-        document.getElementById('queryForm').addEventListener('submit', function(e) {
+        // 全局变量
+        let currentCk = '';
+        
+        // 页面加载时自动加载CK
+        document.addEventListener('DOMContentLoaded', function() {
+            loadCk();
+        });
+
+        // 加载CK文件
+        async function loadCk() {
+            const ckFileUrl = document.getElementById('ckFileUrl').value;
+            if (!ckFileUrl) {
+                showError('请输入CK文件路径');
+                return;
+            }
+
+            try {
+                showLoading('正在加载CK...');
+                const response = await fetch(ckFileUrl);
+                if (!response.ok) throw new Error(`文件加载失败: ${response.status}`);
+                
+                const ckContent = await response.text();
+                currentCk = ckContent.trim();
+                
+                // 更新预览
+                document.getElementById('ckPreview').textContent = 
+                    currentCk || 'CK文件为空';
+                
+                showSuccess('CK加载成功');
+                console.log('CK加载成功:', currentCk);
+            } catch (error) {
+                console.error('加载CK失败:', error);
+                showError('加载CK失败: ' + error.message);
+                document.getElementById('ckPreview').textContent = '加载失败';
+            }
+        }
+
+        // 测试CK有效性
+        async function testCk() {
+            if (!currentCk) {
+                showError('请先加载CK');
+                return;
+            }
+
+            try {
+                showLoading('正在测试CK有效性...');
+                
+                // 这里可以添加实际的CK测试逻辑
+                // 例如发送一个测试请求到API
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                // 模拟测试结果
+                const isValid = currentCk.length > 10; // 简单判断CK长度
+                
+                if (isValid) {
+                    showSuccess('CK有效，可以正常使用');
+                } else {
+                    showError('CK可能已过期，请检查更新');
+                }
+            } catch (error) {
+                showError('测试CK失败: ' + error.message);
+            }
+        }
+
+        // 表单提交处理
+        document.getElementById('queryForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
-            // 获取表单数据
-            const plateNumber = document.getElementById('plateNumber').value;
-            const plateType = document.getElementById('plateType').value;
-            const contractNumber = document.getElementById('contractNumber').value;
+            const plateNumber = document.getElementById('plateNumber').value.trim();
+            
+            if (!plateNumber) {
+                showError('请输入号牌号码');
+                return;
+            }
+            
+            if (!currentCk) {
+                showError('请先加载CK');
+                return;
+            }
             
             // 显示加载动画
-            document.getElementById('loading').style.display = 'block';
+            showLoading('正在查询数据，请稍候...');
             document.getElementById('errorMessage').style.display = 'none';
+            document.getElementById('successMessage').style.display = 'none';
             document.getElementById('resultContainer').style.display = 'none';
             
-            // 模拟API调用（实际应用中需要连接后端）
-            setTimeout(() => {
-                // 隐藏加载动画
-                document.getElementById('loading').style.display = 'none';
-                
-                // 模拟查询结果
-                if (plateNumber) {
-                    displayResults(plateNumber, plateType, contractNumber);
-                } else {
-                    showError('请输入号牌号码');
-                }
-            }, 2000);
+            try {
+                // 模拟使用CK进行API调用
+                await simulateApiCall(plateNumber);
+                displayResults(plateNumber);
+            } catch (error) {
+                showError('查询失败: ' + error.message);
+            }
         });
-        
-        function displayResults(plateNumber, plateType, contractNumber) {
-            // 模拟数据
+
+        // 模拟API调用（使用CK）
+        async function simulateApiCall(plateNumber) {
+            // 模拟网络请求延迟
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            
+            // 模拟CK过期检测
+            if (currentCk.includes('expired') || currentCk.length < 5) {
+                throw new Error('CK可能已过期，请检查更新');
+            }
+            
+            // 模拟API响应
+            return {
+                success: true,
+                data: `使用CK: ${currentCk.substring(0, 50)}... 查询车牌: ${plateNumber}`
+            };
+        }
+
+        // 显示查询结果
+        function displayResults(plateNumber) {
             const mockData = {
                 '号牌号码': plateNumber,
-                '号牌种类': getPlateTypeName(plateType),
-                '合同编号': contractNumber || 'HT2025001',
+                '合同编号': `HT${new Date().getFullYear()}${String(Math.random()*1000).padStart(3, '0')}`,
                 '合同状态': '有效',
                 '租赁开始时间': '2025-01-15',
                 '租赁结束时间': '2025-12-15',
@@ -364,7 +440,8 @@ def fetch_single_vehicle_data(plate_number, plate_type="", contract_number=""):
                 '联系电话': '138****5678',
                 '合同签订时间': '2025-01-10',
                 '未处理违法': '0',
-                '数据更新时间': '2025-10-28 15:30:22'
+                '数据更新时间': new Date().toLocaleString('zh-CN'),
+                '使用CK': currentCk.substring(0, 30) + '...'
             };
             
             // 更新结果标题
@@ -388,24 +465,38 @@ def fetch_single_vehicle_data(plate_number, plate_type="", contract_number=""):
             
             // 显示结果容器
             document.getElementById('resultContainer').style.display = 'block';
+            showSuccess('查询完成');
         }
-        
-        function getPlateTypeName(typeCode) {
-            const types = {
-                '01': '小型汽车',
-                '02': '大型汽车',
-                '07': '摩托车',
-                '15': '挂车',
-                '52': '新能源小型汽车'
-            };
-            return types[typeCode] || '未知类型';
+
+        // 工具函数
+        function showLoading(message = '加载中...') {
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('loading').querySelector('p').textContent = message;
         }
-        
+
+        function hideLoading() {
+            document.getElementById('loading').style.display = 'none';
+        }
+
         function showError(message) {
+            hideLoading();
             const errorDiv = document.getElementById('errorMessage');
             errorDiv.textContent = message;
             errorDiv.style.display = 'block';
+            setTimeout(() => errorDiv.style.display = 'none', 5000);
         }
+
+        function showSuccess(message) {
+            hideLoading();
+            const successDiv = document.getElementById('successMessage');
+            successDiv.textContent = message;
+            successDiv.style.display = 'block';
+            setTimeout(() => successDiv.style.display = 'none', 3000);
+        }
+
+        // 事件监听
+        document.getElementById('loadCkBtn').addEventListener('click', loadCk);
+        document.getElementById('testCkBtn').addEventListener('click', testCk);
     </script>
 </body>
 </html>

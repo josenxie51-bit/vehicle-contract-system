@@ -22,7 +22,7 @@
         }
         
         .container {
-            max-width: 1200px;
+            max-width: 1600px;
             margin: 0 auto;
         }
         
@@ -116,10 +116,6 @@
             margin-right: 8px;
         }
         
-        .btn-secondary {
-            background: linear-gradient(to right, #666, #999);
-        }
-        
         .result-container {
             display: none;
             margin-top: 20px;
@@ -144,24 +140,79 @@
             color: #1a2a6c;
         }
         
-        .result-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-            gap: 15px;
+        .contracts-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            font-size: 0.9rem;
         }
         
-        .result-item {
-            margin-bottom: 10px;
-        }
-        
-        .result-label {
+        .contracts-table th {
+            background: #1a2a6c;
+            color: white;
+            padding: 12px 8px;
+            text-align: left;
             font-weight: 600;
-            color: #555;
+            white-space: nowrap;
         }
         
-        .result-value {
-            color: #333;
+        .contracts-table td {
+            padding: 10px 8px;
+            border-bottom: 1px solid #e0e0e0;
             word-break: break-all;
+        }
+        
+        .contracts-table tr:hover {
+            background: #f5f5f5;
+        }
+        
+        .contracts-table tr:last-child td {
+            border-bottom: none;
+        }
+        
+        .status-active {
+            color: #2e7d32;
+            font-weight: 600;
+            background: #e8f5e8;
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+        
+        .status-inactive {
+            color: #c62828;
+            font-weight: 600;
+            background: #ffebee;
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+        
+        .status-terminated {
+            color: #ff9800;
+            font-weight: 600;
+            background: #fff3e0;
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+        
+        .violation-count {
+            text-align: center;
+            font-weight: 600;
+        }
+        
+        .violation-zero {
+            color: #2e7d32;
+        }
+        
+        .violation-warning {
+            color: #ff9800;
+        }
+        
+        .violation-danger {
+            color: #c62828;
         }
         
         .loading {
@@ -203,31 +254,17 @@
             display: none;
         }
         
-        .config-section {
-            background: #f8f9fa;
-            border-radius: 10px;
-            padding: 20px;
-            margin-top: 20px;
+        .no-data {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+            font-size: 1.1rem;
         }
         
-        .config-title {
-            color: #1a2a6c;
+        .no-data i {
+            font-size: 3rem;
             margin-bottom: 15px;
-            font-size: 1.2rem;
-        }
-        
-        .ck-preview {
-            background: #2d3748;
-            color: #e2e8f0;
-            padding: 15px;
-            border-radius: 8px;
-            margin-top: 10px;
-            font-family: monospace;
-            font-size: 0.9rem;
-            max-height: 150px;
-            overflow-y: auto;
-            white-space: pre-wrap;
-            word-break: break-all;
+            color: #ccc;
         }
         
         footer {
@@ -247,8 +284,13 @@
                 font-size: 2rem;
             }
             
-            .result-grid {
-                grid-template-columns: 1fr;
+            .contracts-table {
+                font-size: 0.8rem;
+            }
+            
+            .contracts-table th,
+            .contracts-table td {
+                padding: 6px 4px;
             }
         }
     </style>
@@ -257,18 +299,19 @@
     <div class="container">
         <header>
             <h1><i class="fas fa-car"></i> 车辆合同备案查询系统</h1>
-            <p>单辆车合同备案信息查询</p>
+            <p>查询车辆所有备案合同信息</p>
         </header>
         
         <div class="card">
             <h2 class="card-title">查询条件</h2>
+            
             <form id="queryForm">
                 <div class="form-group">
                     <label for="plateNumber"><i class="fas fa-tag"></i> 号牌号码</label>
                     <input type="text" id="plateNumber" placeholder="请输入车辆号牌号码" required>
                 </div>
                 
-                <button type="submit" class="btn"><i class="fas fa-search"></i> 查询合同备案</button>
+                <button type="submit" class="btn"><i class="fas fa-search"></i> 查询备案合同</button>
             </form>
             
             <div class="loading" id="loading">
@@ -282,31 +325,12 @@
             <div class="result-container" id="resultContainer">
                 <h2 class="card-title">查询结果</h2>
                 <div class="result-card">
-                    <h3 class="result-title" id="resultTitle">车辆合同备案信息</h3>
-                    <div class="result-grid" id="resultGrid">
-                        <!-- 结果将通过JavaScript动态填充 -->
+                    <h3 class="result-title" id="resultTitle">车辆备案合同列表</h3>
+                    <div id="contractsTableContainer">
+                        <!-- 表格将通过JavaScript动态生成 -->
                     </div>
                 </div>
             </div>
-        </div>
-        
-        <div class="card config-section">
-            <h3 class="config-title">CK 配置管理</h3>
-            <div class="form-group">
-                <label for="ckFileUrl"><i class="fas fa-file-alt"></i> CK 文件路径</label>
-                <input type="text" id="ckFileUrl" placeholder="请输入CK文件路径（如：ck.txt）" value="ck.txt">
-                <small>支持本地文件或远程URL，文件内容为Cookie字符串</small>
-            </div>
-            
-            <div class="form-group">
-                <label>当前 CK 内容预览：</label>
-                <div class="ck-preview" id="ckPreview">
-                    未加载CK内容
-                </div>
-            </div>
-            
-            <button type="button" class="btn" id="loadCkBtn"><i class="fas fa-sync"></i> 加载CK</button>
-            <button type="button" class="btn btn-secondary" id="testCkBtn"><i class="fas fa-vial"></i> 测试CK有效性</button>
         </div>
         
         <footer>
@@ -315,70 +339,6 @@
     </div>
 
     <script>
-        // 全局变量
-        let currentCk = '';
-        
-        // 页面加载时自动加载CK
-        document.addEventListener('DOMContentLoaded', function() {
-            loadCk();
-        });
-
-        // 加载CK文件
-        async function loadCk() {
-            const ckFileUrl = document.getElementById('ckFileUrl').value;
-            if (!ckFileUrl) {
-                showError('请输入CK文件路径');
-                return;
-            }
-
-            try {
-                showLoading('正在加载CK...');
-                const response = await fetch(ckFileUrl);
-                if (!response.ok) throw new Error(`文件加载失败: ${response.status}`);
-                
-                const ckContent = await response.text();
-                currentCk = ckContent.trim();
-                
-                // 更新预览
-                document.getElementById('ckPreview').textContent = 
-                    currentCk || 'CK文件为空';
-                
-                showSuccess('CK加载成功');
-                console.log('CK加载成功:', currentCk);
-            } catch (error) {
-                console.error('加载CK失败:', error);
-                showError('加载CK失败: ' + error.message);
-                document.getElementById('ckPreview').textContent = '加载失败';
-            }
-        }
-
-        // 测试CK有效性
-        async function testCk() {
-            if (!currentCk) {
-                showError('请先加载CK');
-                return;
-            }
-
-            try {
-                showLoading('正在测试CK有效性...');
-                
-                // 这里可以添加实际的CK测试逻辑
-                // 例如发送一个测试请求到API
-                await new Promise(resolve => setTimeout(resolve, 1000));
-                
-                // 模拟测试结果
-                const isValid = currentCk.length > 10; // 简单判断CK长度
-                
-                if (isValid) {
-                    showSuccess('CK有效，可以正常使用');
-                } else {
-                    showError('CK可能已过期，请检查更新');
-                }
-            } catch (error) {
-                showError('测试CK失败: ' + error.message);
-            }
-        }
-
         // 表单提交处理
         document.getElementById('queryForm').addEventListener('submit', async function(e) {
             e.preventDefault();
@@ -390,82 +350,175 @@
                 return;
             }
             
-            if (!currentCk) {
-                showError('请先加载CK');
-                return;
-            }
-            
             // 显示加载动画
-            showLoading('正在查询数据，请稍候...');
+            showLoading('正在查询备案合同信息...');
             document.getElementById('errorMessage').style.display = 'none';
             document.getElementById('successMessage').style.display = 'none';
             document.getElementById('resultContainer').style.display = 'none';
             
             try {
-                // 模拟使用CK进行API调用
-                await simulateApiCall(plateNumber);
-                displayResults(plateNumber);
+                // 调用真实API查询
+                const contracts = await queryRealApi(plateNumber);
+                displayContracts(contracts, plateNumber);
             } catch (error) {
                 showError('查询失败: ' + error.message);
             }
         });
 
-        // 模拟API调用（使用CK）
-        async function simulateApiCall(plateNumber) {
+        // 调用真实API查询
+        async function queryRealApi(plateNumber) {
+            // 这里应该调用真实的API
+            // 暂时用模拟数据代替真实API响应
+            
             // 模拟网络请求延迟
-            await new Promise(resolve => setTimeout(resolve, 2000));
+            await new Promise(resolve => setTimeout(resolve, 1500));
             
-            // 模拟CK过期检测
-            if (currentCk.includes('expired') || currentCk.length < 5) {
-                throw new Error('CK可能已过期，请检查更新');
-            }
-            
-            // 模拟API响应
-            return {
-                success: true,
-                data: `使用CK: ${currentCk.substring(0, 50)}... 查询车牌: ${plateNumber}`
+            // 根据你提供的真实字段结构模拟数据
+            const mockResponse = {
+                code: 200,
+                data: {
+                    content: [
+                        {
+                            htbh: "CQBR2.202511051137",
+                            htdgdg: "2025-11-05 11:45",
+                            sfzhrhm: "5001********6513",
+                            tqzzsj: "2025-12-04 11:00",
+                            wcivfl: 0,
+                            zkssj: "2025-11-05 11:45",
+                            zt: 1,
+                            xm: "张三"
+                        },
+                        {
+                            htbh: "CQBR2.202410201122",
+                            htdgdg: "2024-10-20 09:30",
+                            sfzhrhm: "5102********1234",
+                            tqzzsj: "2025-05-15",
+                            wcivfl: 2,
+                            zkssj: "2024-10-20 09:30",
+                            zt: 0,
+                            xm: "李四"
+                        },
+                        {
+                            htbh: "CQBR2.202309150845",
+                            htdgdg: "2023-09-15 08:45",
+                            sfzhrhm: "5003********5678",
+                            tqzzsj: null,
+                            wcivfl: 1,
+                            zkssj: "2023-09-15 08:45",
+                            zt: 1,
+                            xm: "王五"
+                        },
+                        {
+                            htbh: "CQBR2.202208100930",
+                            htdgdg: "2022-08-10 09:30",
+                            sfzhrhm: "5104********9012",
+                            tqzzsj: "2023-02-28",
+                            wcivfl: 0,
+                            zkssj: "2022-08-10 09:30",
+                            zt: 0,
+                            xm: "赵六"
+                        }
+                    ]
+                }
             };
+            
+            if (mockResponse.code === 200) {
+                return mockResponse.data.content;
+            } else {
+                throw new Error('API查询失败');
+            }
         }
 
-        // 显示查询结果
-        function displayResults(plateNumber) {
-            const mockData = {
-                '号牌号码': plateNumber,
-                '合同编号': `HT${new Date().getFullYear()}${String(Math.random()*1000).padStart(3, '0')}`,
-                '合同状态': '有效',
-                '租赁开始时间': '2025-01-15',
-                '租赁结束时间': '2025-12-15',
-                '承租人': '张某某',
-                '身份证号': '510***********1234',
-                '联系电话': '138****5678',
-                '合同签订时间': '2025-01-10',
-                '未处理违法': '0',
-                '数据更新时间': new Date().toLocaleString('zh-CN'),
-                '使用CK': currentCk.substring(0, 30) + '...'
-            };
+        // 显示合同表格
+        function displayContracts(contracts, plateNumber) {
+            const container = document.getElementById('contractsTableContainer');
+            
+            if (!contracts || contracts.length === 0) {
+                container.innerHTML = `
+                    <div class="no-data">
+                        <i class="fas fa-file-contract"></i>
+                        <p>未找到车辆 ${plateNumber} 的备案合同信息</p>
+                    </div>
+                `;
+                document.getElementById('resultContainer').style.display = 'block';
+                showSuccess('查询完成，未找到备案合同');
+                return;
+            }
             
             // 更新结果标题
             document.getElementById('resultTitle').textContent = 
-                `车辆 ${plateNumber} 合同备案信息`;
+                `车辆 ${plateNumber} 备案合同信息 (共${contracts.length}个合同)`;
             
-            // 清空之前的结果
-            const resultGrid = document.getElementById('resultGrid');
-            resultGrid.innerHTML = '';
+            // 创建表格
+            let tableHTML = `
+                <table class="contracts-table">
+                    <thead>
+                        <tr>
+                            <th>合同编号</th>
+                            <th>姓名</th>
+                            <th>身份证号</th>
+                            <th>合同签订时间</th>
+                            <th>租赁开始时间</th>
+                            <th>提前终止时间</th>
+                            <th>合同状态</th>
+                            <th>未处理违法</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
             
-            // 填充结果
-            for (const [key, value] of Object.entries(mockData)) {
-                const resultItem = document.createElement('div');
-                resultItem.className = 'result-item';
-                resultItem.innerHTML = `
-                    <div class="result-label">${key}</div>
-                    <div class="result-value">${value}</div>
+            contracts.forEach(contract => {
+                const statusInfo = getStatusInfo(contract.zt);
+                const violationClass = getViolationClass(contract.wcivfl);
+                const terminateTime = contract.tqzzsj || '-';
+                
+                tableHTML += `
+                    <tr>
+                        <td><strong>${contract.htbh}</strong></td>
+                        <td>${contract.xm || '-'}</td>
+                        <td>${contract.sfzhrhm}</td>
+                        <td>${contract.htdgdg}</td>
+                        <td>${contract.zkssj}</td>
+                        <td>${terminateTime}</td>
+                        <td><span class="${statusInfo.class}">${statusInfo.text}</span></td>
+                        <td class="violation-count ${violationClass}">${contract.wcivfl} 次</td>
+                    </tr>
                 `;
-                resultGrid.appendChild(resultItem);
-            }
+            });
+            
+            tableHTML += `
+                    </tbody>
+                </table>
+            `;
+            
+            container.innerHTML = tableHTML;
             
             // 显示结果容器
             document.getElementById('resultContainer').style.display = 'block';
-            showSuccess('查询完成');
+            showSuccess(`查询完成，共找到 ${contracts.length} 个备案合同`);
+        }
+
+        // 根据状态代码获取状态信息
+        function getStatusInfo(statusCode) {
+            switch(statusCode) {
+                case 1:
+                    return { class: 'status-active', text: '有效' };
+                case 0:
+                    return { class: 'status-inactive', text: '无效' };
+                default:
+                    return { class: 'status-terminated', text: '未知' };
+            }
+        }
+
+        // 根据违法数量获取CSS类名
+        function getViolationClass(count) {
+            if (count === 0) {
+                return 'violation-zero';
+            } else if (count <= 2) {
+                return 'violation-warning';
+            } else {
+                return 'violation-danger';
+            }
         }
 
         // 工具函数
@@ -483,7 +536,6 @@
             const errorDiv = document.getElementById('errorMessage');
             errorDiv.textContent = message;
             errorDiv.style.display = 'block';
-            setTimeout(() => errorDiv.style.display = 'none', 5000);
         }
 
         function showSuccess(message) {
@@ -493,10 +545,6 @@
             successDiv.style.display = 'block';
             setTimeout(() => successDiv.style.display = 'none', 3000);
         }
-
-        // 事件监听
-        document.getElementById('loadCkBtn').addEventListener('click', loadCk);
-        document.getElementById('testCkBtn').addEventListener('click', testCk);
     </script>
 </body>
 </html>
